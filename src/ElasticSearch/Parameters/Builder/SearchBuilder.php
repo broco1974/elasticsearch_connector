@@ -416,10 +416,43 @@ class SearchBuilder {
   protected function setMoreLikeThisQuery($query_options) {
     if (!empty($query_options['mlt'])) {
       $mlt_query['more_like_this'] = [];
-      $mlt_query['more_like_this']['like_text'] = $query_options['mlt']['id'];
+
+      // Transform input parameter "id" to "ids" if available.
+      if (isset($query_options['mlt']['id'])) {
+        $query_options['mlt']['ids'] =
+          is_array($query_options['mlt']['id']) ?
+            $query_options['mlt']['id'] :
+            [$query_options['mlt']['id']];
+        unset($query_options['mlt']['id']);
+      }
+
+      // Input parameter: ids
+      if (isset($query_options['mlt']['ids'])) {
+        $mlt_query['more_like_this']['ids'] = $query_options['mlt']['ids'];
+        foreach ($mlt_query['more_like_this']['ids'] as $k => $v) {
+          // Incase the argument value is just the content's id and not the full _id
+          if (is_numeric($v)) {
+            // TODO: isn't there a better way to generate the _id for they query?
+            $mlt_query['more_like_this']['ids'][$k] = "entity:node/$v:en";
+          }
+        }
+      }
+
+      // Input parameter: like
+      if (isset($query_options['mlt']['like'])) {
+        $mlt_query['more_like_this']['like'] = $query_options['mlt']['like'];
+      }
+
+      // Input parameter: unlike
+      if (isset($query_options['mlt']['unlike'])) {
+        $mlt_query['more_like_this']['unlike'] = $query_options['mlt']['unlike'];
+      }
+
+      // Input parameter: fields
       $mlt_query['more_like_this']['fields'] = array_values(
         $query_options['mlt']['fields']
       );
+
       // TODO: Make this settings configurable in the view.
       $mlt_query['more_like_this']['max_query_terms'] = 1;
       $mlt_query['more_like_this']['min_doc_freq'] = 1;
